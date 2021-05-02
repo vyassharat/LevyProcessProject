@@ -44,6 +44,10 @@ class Merton76:
                        xtol=0.000001, ftol=0.000001)
 
         print(opt)
+        self.sigma = opt[0]
+        self.lamb = opt[1]
+        self.mu = opt[2]
+        self.delta = opt[3]
         return opt
 
     def M76_error_function_FFT(self, p0):
@@ -75,9 +79,9 @@ class Merton76:
             #T = (option['Maturity'] - option['Date']).days / 365.
             #TODO: Should self.S0 and self.r be the best way here?
             T = option["TTM"]
-            model_value = self.M76_value_call_FFT(self.S0, option['Strike'], T,
-                                             self.r, sigma, lamb, mu, delta)
-            se.append((model_value - option['Call']) ** 2)
+            model_value = self.M76_value_call_FFT(self.S0, option['Strike Price'], T,
+                                             self.r, sigma, lamb, mu, delta, self.dividendRate)
+            se.append((model_value - option['Premium']) ** 2)
         RMSE = math.sqrt(sum(se) / len(se))
         min_RMSE = min(min_RMSE, RMSE)
         if i % 50 == 0:
@@ -85,12 +89,11 @@ class Merton76:
         i += 1
         return RMSE
 
-    def M76_characteristic_function(self, u, x0, T, r, sigma, lamb, mu, delta):
+    def M76_characteristic_function(self, u, x0, T, r, sigma, lamb, mu, delta, dividend):
         ''' Valuation of European call option in M76 model via
-        Lewis (2001) Fourier-based approach: characteristic function.
-
-        Parameter definitions see function M76_value_call_INT. '''
-        omega = x0 / T + r - 0.5 * sigma ** 2 \
+                Lewis (2001) Fourier-based approach: characteristic function.
+                Parameter definitions see function M76_value_call_FFT. '''
+        omega = x0 / T + (r - dividend) - 0.5 * sigma ** 2 \
                 - lamb * (np.exp(mu + 0.5 * delta ** 2) - 1)
         value = np.exp((1j * u * omega - 0.5 * u ** 2 * sigma ** 2 +
                         lamb * (np.exp(1j * u * mu -
@@ -101,7 +104,7 @@ class Merton76:
     # Valuation by FFT
     #
 
-    def M76_value_call_FFT(self, S0, K, T, r, sigma, lamb, mu, delta):
+    def M76_value_call_FFT(self, S0, K, T, r, sigma, lamb, mu, delta, dividend):
         ''' Valuation of European call option in M76 model via
         Carr-Madan (1999) Fourier-based approach.
 
@@ -142,25 +145,25 @@ class Merton76:
         if S0 >= 0.95 * K:  # ITM case
             alpha = 1.5
             v = vo - (alpha + 1) * 1j
-            mod_char_fun = math.exp(-r * T) * self.M76_characteristic_function(
-                v, x0, T, r, sigma, lamb, mu, delta) \
+            mod_char_fun = math.exp(-(r - dividend) * T) * self.M76_characteristic_function(
+                v, x0, T, r, sigma, lamb, mu, delta, dividend) \
                            / (alpha ** 2 + alpha - vo ** 2 + 1j * (2 * alpha + 1) * vo)
         else:  # OTM case
             alpha = 1.1
             v = (vo - 1j * alpha) - 1j
-            mod_char_fun_1 = math.exp(-r * T) * (1 / (1 + 1j * (vo - 1j * alpha))
-                                                 - math.exp(r * T) /
-                                                 (1j * (vo - 1j * alpha))
-                                                 - self.M76_characteristic_function(
-                        v, x0, T, r, sigma, lamb, mu, delta) /
-                                                 ((vo - 1j * alpha) ** 2 - 1j * (vo - 1j * alpha)))
+            mod_char_fun_1 = math.exp(-(r - dividend) * T) * (1 / (1 + 1j * (vo - 1j * alpha))
+                                                              - math.exp((r - dividend) * T) /
+                                                              (1j * (vo - 1j * alpha))
+                                                              - self.M76_characteristic_function(
+                        v, x0, T, r, sigma, lamb, mu, delta, dividend) /
+                                                              ((vo - 1j * alpha) ** 2 - 1j * (vo - 1j * alpha)))
             v = (vo + 1j * alpha) - 1j
-            mod_char_fun_2 = math.exp(-r * T) * (1 / (1 + 1j * (vo + 1j * alpha))
-                                                 - math.exp(r * T) /
-                                                 (1j * (vo + 1j * alpha))
-                                                 - self.M76_characteristic_function(
-                        v, x0, T, r, sigma, lamb, mu, delta) /
-                                                 ((vo + 1j * alpha) ** 2 - 1j * (vo + 1j * alpha)))
+            mod_char_fun_2 = math.exp(-(r - dividend) * T) * (1 / (1 + 1j * (vo + 1j * alpha))
+                                                              - math.exp((r - dividend) * T) /
+                                                              (1j * (vo + 1j * alpha))
+                                                              - self.M76_characteristic_function(
+                        v, x0, T, r, sigma, lamb, mu, delta, dividend) /
+                                                              ((vo + 1j * alpha) ** 2 - 1j * (vo + 1j * alpha)))
 
         # Numerical FFT Routine
         delt = np.zeros(N, dtype=np.float)
@@ -180,3 +183,27 @@ class Merton76:
         pos = int((k + b) / eps)
         call_value = call_value_m[pos]
         return call_value * S0
+
+    def generate_plot(self, opt, options):
+        #
+        # Calculating Model Prices
+        #
+        sigma, lamb, mu, delta = opt
+        options['M76 Model'] = 0.0
+        for row, option in options.iterrows():
+            T = (option['Expiration Date of the Option'] - option['The Date of this Price']).days / 365.
+            options.loc[row, 'M76 Model'] = self.M76_value_call_FFT(self.S0, option['Strike Price'],
+                                                                       T, self.r, self.sigma, lamb, mu, delta,
+                                                                       self.dividendRate)
+
+        #
+        # Plotting
+        #
+        mats = sorted(set(options['Expiration Date of the Option']))
+        options = options.set_index('Strike Price')
+        for i, mat in enumerate(mats):
+            options[options['Expiration Date of the Option'] == mat][['Premium', 'M76 Model']]. \
+                plot(style=['b-', 'ro'], title='%s' % str(mat)[:10],
+                     grid=True)
+            plt.ylabel('option value')
+            plt.savefig('./M76 Plots/M76_calibration_3_%s.pdf' % i)
