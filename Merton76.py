@@ -33,6 +33,9 @@ class Merton76:
         self.options = optionData
 
     def calibrate(self):
+        global i, min_RMSE
+        i = 0
+        min_RMSE = 100
         p0 = sop.brute(self.M76_error_function_FFT,
                        ((0.075, 0.201, 0.025),
                         (0.10, 0.401, 0.1), (-0.5, 0.01, 0.1),
@@ -184,7 +187,7 @@ class Merton76:
         call_value = call_value_m[pos]
         return call_value * S0
 
-    def generate_plot(self, opt, options):
+    def generate_plot(self, opt, options, singleCalibration:bool = False):
         #
         # Calculating Model Prices
         #
@@ -206,4 +209,7 @@ class Merton76:
                 plot(style=['b-', 'ro'], title='%s' % str(mat)[:10],
                      grid=True)
             plt.ylabel('option value')
-            plt.savefig('./M76 Plots/M76_calibration_3_%s.pdf' % i)
+            if(singleCalibration):
+                plt.savefig('./M76 Plots/M76_Single_Exp_Calibration.pdf')
+            else:
+                plt.savefig('./M76 Plots/M76_calibration_3_%s.pdf' % i)

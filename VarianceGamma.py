@@ -32,10 +32,13 @@ class VarianceGamma:
         self.options = optionData
 
     def calibrate(self):
+        global i, min_RMSE
+        i = 0
+        min_RMSE = 100
         p0 = sop.brute(self.VG_error_function_FFT,
-                       ((0.075, 0.201, 0.015),
-                        (0.05, 0.8, 0.05),
-                        (-0.4, 0.3, 0.05)), finish=None)
+                       ((0.075, 0.301, 0.015),
+                        (0.05, 0.8, 0.025),
+                        (-0.4, 0.3, 0.025)), finish=None)
 
         opt = sop.fmin(self.VG_error_function_FFT, p0,
                        maxiter=500, maxfun=750,
@@ -88,7 +91,7 @@ class VarianceGamma:
         ''' Valuation of European call option in VG model via
                 Lewis (2001) Fourier-based approach: characteristic function.
                 Parameter definitions see function VG_value_call_FFT. '''
-        omega = (1/nu) * np.log(1 + (nu*theta) - (.5 * (sigma * sigma) * nu))
+        omega = (1/nu) * np.log(1 - (nu*theta) - (.5 * (sigma * sigma) * nu))
         value = np.exp(1j * u * omega * T) * pow((1-(1j*u*nu*theta) + (0.5*(sigma*sigma)*nu*(u*u))), -T/nu)
         return value
 
@@ -172,7 +175,7 @@ class VarianceGamma:
         call_value = call_value_m[pos]
         return call_value * S0
 
-    def generate_plot(self, opt, options):
+    def generate_plot(self, opt, options, singleCalibration:bool = False):
         #
         # Calculating Model Prices
         #
@@ -193,4 +196,7 @@ class VarianceGamma:
                 plot(style=['b-', 'ro'], title='%s' % str(mat)[:10],
                      grid=True)
             plt.ylabel('option value')
-            plt.savefig('./VG Plots/VG_calibration_3_%s.pdf' % i)
+            if (singleCalibration):
+                plt.savefig('./VG Plots/VG_Single_Exp_Calibration.pdf')
+            else:
+                plt.savefig('./VG Plots/VG_calibration_3_%s.pdf' % i)

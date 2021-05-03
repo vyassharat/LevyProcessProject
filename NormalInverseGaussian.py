@@ -32,10 +32,13 @@ class NormalInverseGaussian:
         self.options = optionData
 
     def calibrate(self):
+        global i, min_RMSE
+        i = 0
+        min_RMSE = 100
         p0 = sop.brute(self.NIG_error_function_FFT,
-                       ((1, 1),
-                        (0, 10, .025),
-                        (-10, 10, .025)), finish=None)
+                       ((0.01, 1, .05),
+                        (0, 10, .25),
+                        (-10, 10, .25)), finish=None)
 
         opt = sop.fmin(self.NIG_error_function_FFT, p0,
                        maxiter=500, maxfun=750,
@@ -128,7 +131,7 @@ class NormalInverseGaussian:
         '''
         k = math.log(K / S0)
         x0 = math.log(S0 / S0)
-        g = 2  # factor to increase accuracy
+        g = 3  # factor to increase accuracy
         N = g * 4096
         eps = (g * 150.) ** -1
         eta = 2 * math.pi / (N * eps)
@@ -137,14 +140,14 @@ class NormalInverseGaussian:
         vo = eta * (u - 1)
         # Modificatons to Ensure Integrability
         if S0 >= 0.95 * K:  # ITM case
-            #a = 1.5
-            a=alpha
+            a = 1.5
+            #a=alpha
             v = vo - (a + 1) * 1j
             mod_char_fun = math.exp(-(r - dividend) * T) * self.NIG_characteristic_function(v,x0, T, r, delta, alpha, beta, dividend) \
                            / (a ** 2 + a - vo ** 2 + 1j * (2 * a + 1) * vo)
         else:  # OTM case
-            #a = 1.1
-            a=alpha
+            a = 1.1
+            #a=alpha
             v = (vo - 1j * a) - 1j
             mod_char_fun_1 = math.exp(-(r - dividend) * T) * (1 / (1 + 1j * (vo - 1j * a))
                                                               - math.exp((r - dividend) * T) /
@@ -177,7 +180,7 @@ class NormalInverseGaussian:
         call_value = call_value_m[pos]
         return call_value * S0
 
-    def generate_plot(self, opt, options):
+    def generate_plot(self, opt, options, singleCalibration:bool = False):
         #
         # Calculating Model Prices
         #
@@ -198,4 +201,7 @@ class NormalInverseGaussian:
                 plot(style=['b-', 'ro'], title='%s' % str(mat)[:10],
                      grid=True)
             plt.ylabel('option value')
-            plt.savefig('./NIG Plots/NIG_calibration_3_%s.pdf' % i)
+            if (singleCalibration):
+                plt.savefig('./NIG Plots/NIG_Single_Exp_Calibration.pdf')
+            else:
+                plt.savefig('./NIG Plots/NIG_calibration_3_%s.pdf' % i)
