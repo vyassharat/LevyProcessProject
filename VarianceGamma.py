@@ -77,7 +77,7 @@ class VarianceGamma:
         se = []
         for row, option in self.options.iterrows():
             T = option["TTM"]
-            model_value = self.VG_value_call_FFT(self.S0, option['Strike Price'], T,
+            model_value = self.VG_value_call_FFT_Bear(self.S0, option['Strike Price'], T,
                                              self.r, sigma, nu, theta, self.dividendRate)
             se.append((model_value - option['Premium']) ** 2)
         RMSE = math.sqrt(sum(se) / len(se))
@@ -183,7 +183,7 @@ class VarianceGamma:
         options['VG Model'] = 0.0
         for row, option in options.iterrows():
             T = (option['Expiration Date of the Option'] - option['The Date of this Price']).days / 365.
-            options.loc[row, 'VG Model'] = self.VG_value_call_FFT(self.S0, option['Strike Price'],
+            options.loc[row, 'VG Model'] = self.VG_value_call_FFT_Bear(self.S0, option['Strike Price'],
                                                                        T, self.r, sigma, nu, theta, self.dividendRate)
 
         #
@@ -200,3 +200,63 @@ class VarianceGamma:
                 plt.savefig('./VG Plots/VG_Single_Exp_Calibration.pdf')
             else:
                 plt.savefig('./VG Plots/VG_calibration_3_%s.pdf' % i)
+
+#
+    # Valuation by FFT
+    #
+    def VG_value_call_FFT_Bear(self, S0, K, T, r, sigma, nu, theta, dividend):
+        ''' Valuation of European call option in VG model via
+        Carr-Madan (1999) Fourier-based approach.
+
+        Parameters
+        ==========
+        S0: float
+            initial stock/index level
+        K: float
+            strike price
+        T: float
+            time-to-maturity (for t=0)
+        r: float
+            constant risk-free short rate
+        sigma: float
+
+        nu: float
+
+        theta: float
+
+        dividend: float
+            dividend rate
+
+        Returns
+        =======
+        call_value: float
+            European call option present value
+        '''
+        k = math.log(K / S0)
+        x0 = math.log(S0 / S0)
+        g = 2  # factor to increase accuracy
+        N = g * 4096
+        eps = (g * 150.) ** -1
+        eta = 2 * math.pi / (N * eps)
+        b = 0.5 * N * eps - k
+        u = np.arange(1, N + 1, 1)
+        vo = eta * (u - 1)
+
+        alpha = 1.5
+        v = vo - (alpha + 1) * 1j
+        mod_char_fun = math.exp(-(r - dividend) * T) * self.VG_characteristic_function(v,x0, T, r, sigma, nu, theta, dividend) \
+                           / (alpha ** 2 + alpha - vo ** 2 + 1j * (2 * alpha + 1) * vo)
+
+        # Numerical FFT Routine
+        delt = np.zeros(N, dtype=np.float)
+        delt[0] = 1
+        j = np.arange(1, N + 1, 1)
+        SimpsonW = (3 + (-1) ** j - delt) / 3
+
+        fft_func = np.exp(1j * b * vo) * mod_char_fun * eta * SimpsonW
+        payoff = (fft(fft_func)).real
+        call_value_m = np.exp(-alpha * k) / math.pi * payoff
+
+        pos = int((k + b) / eps)
+        call_value = call_value_m[pos]
+        return call_value * S0

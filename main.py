@@ -13,8 +13,11 @@ from VarianceGamma import VarianceGamma
 
 def filterData(data):
     newData = data[(data['Moneyness'] > 0.8) & (data['Moneyness'] < 1.2)]
-    filteredData = newData[newData['Expiration Date of the Option'].isin(['12/18/2020'])]
-    return filteredData
+    nExpirations = newData['Expiration Date of the Option'].unique()[:10]
+    firstDate = newData.iloc[0]['The Date of this Price']
+    newData = newData.loc[newData['Expiration Date of the Option'].isin(nExpirations)]
+    dataForFirstDate = newData[newData['The Date of this Price']==firstDate]
+    return dataForFirstDate
 
 def loadData(filename: str):
     df = pd.read_excel(filename)
@@ -109,6 +112,7 @@ def runMerton76ForSPXMultipleExpirationDates(filename: str):
         data.at[index, "Moneyness"] = moneyness
         data.at[index, "TTM"] = (row["Expiration Date of the Option"] - row["The Date of this Price"]).days / 365.
 
+    data = filterData(data)
     m76 = Merton76(S0, K, T, r, impVol, dividendRate, 'Call', data)
     start = time.perf_counter()
     calibratedParams = m76.calibrate()
@@ -131,6 +135,7 @@ def runVGForSPXMultipleExpirationDates(filename: str):
         data.at[index, "Moneyness"] = moneyness
         data.at[index, "TTM"] = (row["Expiration Date of the Option"] - row["The Date of this Price"]).days / 365.
 
+    data = filterData(data)
     vg = VarianceGamma(S0, K, T, r, impVol, dividendRate, 'Call', data)
     start = time.perf_counter()
     calibratedParams = vg.calibrate()
@@ -153,6 +158,7 @@ def runNIGForSPXMultipleExpirationDates(filename: str):
         data.at[index, "Moneyness"] = moneyness
         data.at[index, "TTM"] = (row["Expiration Date of the Option"] - row["The Date of this Price"]).days / 365.
 
+    data = filterData(data)
     nig = NormalInverseGaussian(S0, K, T, r, impVol, dividendRate, 'Call', data)
     start = time.perf_counter()
     calibratedParams = nig.calibrate()
@@ -160,17 +166,17 @@ def runNIGForSPXMultipleExpirationDates(filename: str):
     print('To Calibrate Multi Exp NIG took ' + str(stop - start) + 'seconds')
     nig.generate_plot(calibratedParams, data)
 
-print('\n\nStarting Single Exp Calibrations for M76 \n\n')
-runMerton76ForSPXSingleExpirationDate('spx012017SingleExp.xlsx')
-print('\n\nStarting Single Exp Calibrations for VG \n\n')
-runVGForSPXSingleExpirationDate('spx012017SingleExp.xlsx')
-print('\n\nStarting Single Exp Calibrations for NIG \n\n')
-runNIGForSPXSingleExpirationDate('spx012017SingleExp.xlsx')
+#print('\n\nStarting Single Exp Calibrations for M76 \n\n')
+#runMerton76ForSPXSingleExpirationDate('spx012017SingleExp.xlsx')
+#print('\n\nStarting Single Exp Calibrations for VG \n\n')
+#runVGForSPXSingleExpirationDate('spx012017SingleExp.xlsx')
+#print('\n\nStarting Single Exp Calibrations for NIG \n\n')
+#runNIGForSPXSingleExpirationDate('spx012017SingleExp.xlsx')
 
 '''Will start calibrations for 3 expirations'''
-print('\n\nStarting Multi Exp Calibrations for M76 \n\n')
-runMerton76ForSPXMultipleExpirationDates('spx012017ThreeExps.xlsx')
-print('\n\nStarting Multi Exp Calibrations for VG \n\n')
-runVGForSPXMultipleExpirationDates('spx012017ThreeExps.xlsx')
+#print('\n\nStarting Multi Exp Calibrations for M76 \n\n')
+#runMerton76ForSPXMultipleExpirationDates('spx012017.xlsx')
+#print('\n\nStarting Multi Exp Calibrations for VG \n\n')
+#runVGForSPXMultipleExpirationDates('spx012017.xlsx')
 print('\n\nStarting Multi Exp Calibrations for NIG \n\n')
-runNIGForSPXMultipleExpirationDates('spx012017ThreeExps.xlsx')
+runNIGForSPXMultipleExpirationDates('spx012017.xlsx')
