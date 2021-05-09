@@ -96,8 +96,10 @@ class Merton76:
         ''' Valuation of European call option in M76 model via
                 Lewis (2001) Fourier-based approach: characteristic function.
                 Parameter definitions see function M76_value_call_FFT. '''
-        omega = x0 / T + (r - dividend) - 0.5 * sigma ** 2 \
-                - lamb * (np.exp(mu + 0.5 * delta ** 2) - 1)
+        # omega = x0 / T + (r - dividend) - 0.5 * sigma ** 2 \
+        #         - lamb * (np.exp(mu + 0.5 * delta ** 2) - 1)
+
+        omega = (-.5 * sigma**2) - lamb*(np.exp(mu + (.5*delta**2)) - 1)
         value = np.exp((1j * u * omega - 0.5 * u ** 2 * sigma ** 2 +
                         lamb * (np.exp(1j * u * mu -
                                        u ** 2 * delta ** 2 * 0.5) - 1)) * T)
@@ -106,7 +108,6 @@ class Merton76:
     #
     # Valuation by FFT
     #
-
     def M76_value_call_FFT(self, S0, K, T, r, sigma, lamb, mu, delta, dividend):
         ''' Valuation of European call option in M76 model via
         Carr-Madan (1999) Fourier-based approach.
@@ -144,50 +145,29 @@ class Merton76:
         b = 0.5 * N * eps - k
         u = np.arange(1, N + 1, 1)
         vo = eta * (u - 1)
-        # Modificatons to Ensure Integrability
-        if S0 >= 0.95 * K:  # ITM case
-            alpha = 1.5
-            v = vo - (alpha + 1) * 1j
-            mod_char_fun = math.exp(-(r - dividend) * T) * self.M76_characteristic_function(
+
+        alpha = 1.5
+        v = vo - (alpha + 1) * 1j
+        mod_char_fun = math.exp(-(r - dividend) * T) * self.M76_characteristic_function(
                 v, x0, T, r, sigma, lamb, mu, delta, dividend) \
                            / (alpha ** 2 + alpha - vo ** 2 + 1j * (2 * alpha + 1) * vo)
-        else:  # OTM case
-            alpha = 1.1
-            v = (vo - 1j * alpha) - 1j
-            mod_char_fun_1 = math.exp(-(r - dividend) * T) * (1 / (1 + 1j * (vo - 1j * alpha))
-                                                              - math.exp((r - dividend) * T) /
-                                                              (1j * (vo - 1j * alpha))
-                                                              - self.M76_characteristic_function(
-                        v, x0, T, r, sigma, lamb, mu, delta, dividend) /
-                                                              ((vo - 1j * alpha) ** 2 - 1j * (vo - 1j * alpha)))
-            v = (vo + 1j * alpha) - 1j
-            mod_char_fun_2 = math.exp(-(r - dividend) * T) * (1 / (1 + 1j * (vo + 1j * alpha))
-                                                              - math.exp((r - dividend) * T) /
-                                                              (1j * (vo + 1j * alpha))
-                                                              - self.M76_characteristic_function(
-                        v, x0, T, r, sigma, lamb, mu, delta, dividend) /
-                                                              ((vo + 1j * alpha) ** 2 - 1j * (vo + 1j * alpha)))
+
 
         # Numerical FFT Routine
         delt = np.zeros(N, dtype=np.float)
         delt[0] = 1
         j = np.arange(1, N + 1, 1)
         SimpsonW = (3 + (-1) ** j - delt) / 3
-        if S0 >= 0.95 * K:
-            fft_func = np.exp(1j * b * vo) * mod_char_fun * eta * SimpsonW
-            payoff = (fft(fft_func)).real
-            call_value_m = np.exp(-alpha * k) / math.pi * payoff
-        else:
-            fft_func = (np.exp(1j * b * vo) *
-                        (mod_char_fun_1 - mod_char_fun_2) *
-                        0.5 * eta * SimpsonW)
-            payoff = (fft(fft_func)).real
-            call_value_m = payoff / (np.sinh(alpha * k) * math.pi)
+
+        fft_func = np.exp(1j * b * vo) * mod_char_fun * eta * SimpsonW
+        payoff = (fft(fft_func)).real
+        call_value_m = np.exp(-alpha * k) / math.pi * payoff
+
         pos = int((k + b) / eps)
         call_value = call_value_m[pos]
         return call_value * S0
 
-    def generate_plot(self, opt, options, singleCalibration:bool = False):
+    def generate_plot(self, opt, options, singleCalibration:bool = False, isNDX: bool = False):
         #
         # Calculating Model Prices
         #
@@ -204,12 +184,16 @@ class Merton76:
         #
         mats = sorted(set(options['Expiration Date of the Option']))
         options = options.set_index('Strike Price')
+        if(isNDX):
+            val="NDX"
+        else:
+            val="SPX"
         for i, mat in enumerate(mats):
             options[options['Expiration Date of the Option'] == mat][['Premium', 'M76 Model']]. \
                 plot(style=['b-', 'ro'], title='%s' % str(mat)[:10],
                      grid=True)
             plt.ylabel('option value')
             if(singleCalibration):
-                plt.savefig('./M76 Plots/M76_Single_Exp_Calibration.pdf')
+                plt.savefig('./M76 Plots/'+val+'_M76_Single_Exp_Calibration.pdf')
             else:
-                plt.savefig('./M76 Plots/M76_calibration_3_%s.pdf' % i)
+                plt.savefig('./M76 Plots/'+val+'_M76_calibration_3_%s.pdf' % i)

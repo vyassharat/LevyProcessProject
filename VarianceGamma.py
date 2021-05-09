@@ -175,7 +175,7 @@ class VarianceGamma:
         call_value = call_value_m[pos]
         return call_value * S0
 
-    def generate_plot(self, opt, options, singleCalibration:bool = False):
+    def generate_plot(self, opt, options, singleCalibration:bool = False, isNDX:bool = False):
         #
         # Calculating Model Prices
         #
@@ -191,15 +191,19 @@ class VarianceGamma:
         #
         mats = sorted(set(options['Expiration Date of the Option']))
         options = options.set_index('Strike Price')
+        if (isNDX):
+            val = "NDX"
+        else:
+            val = "SPX"
         for i, mat in enumerate(mats):
             options[options['Expiration Date of the Option'] == mat][['Premium', 'VG Model']]. \
                 plot(style=['b-', 'ro'], title='%s' % str(mat)[:10],
                      grid=True)
             plt.ylabel('option value')
             if (singleCalibration):
-                plt.savefig('./VG Plots/VG_Single_Exp_Calibration.pdf')
+                plt.savefig('./VG Plots/'+val+'_VG_Single_Exp_Calibration.pdf')
             else:
-                plt.savefig('./VG Plots/VG_calibration_3_%s.pdf' % i)
+                plt.savefig('./VG Plots/'+val+'_VG_calibration_3_%s.pdf' % i)
 
 #
     # Valuation by FFT
