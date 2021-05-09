@@ -36,9 +36,9 @@ class VarianceGamma:
         i = 0
         min_RMSE = 100
         p0 = sop.brute(self.VG_error_function_FFT,
-                       ((0.075, 0.301, 0.015),
-                        (0.05, 0.8, 0.025),
-                        (-0.4, 0.3, 0.025)), finish=None)
+                       ((0.075, 0.17, 0.05),
+                        (0.05, 0.5, 0.05),
+                        (-0.8, 0.3, 0.05)), finish=None)
 
         opt = sop.fmin(self.VG_error_function_FFT, p0,
                        maxiter=500, maxfun=750,
