@@ -36,9 +36,9 @@ class NormalInverseGaussian:
         i = 0
         min_RMSE = 100
         p0 = sop.brute(self.NIG_error_function_FFT,
-                       ((0.1, .6, .05),
-                        (0, 10, .5),
-                        (-10, 10, .5)), finish=None)
+                       ((0.1, .6, .1),
+                        (0, 10, 1),
+                        (-10, 10, 1)), finish=None)
 
         opt = sop.fmin(self.NIG_error_function_FFT, p0,
                        maxiter=500, maxfun=750,
