@@ -182,6 +182,11 @@ class Merton76:
         #
         # Plotting
         #
+        options['Residual Diff'] = 0.0
+        options['Residual Diff'] = abs(options['Premium'] - options['M76 Model'])
+        print('\nAvg $ Diff: '+str(np.average(options['Residual Diff']))+'\n')
+        print('Total $ Diff: '+str(np.sum(options['Residual Diff']))+'\n')
+        print('Median $ Diff: '+str(np.median(options['Residual Diff']))+'\n')
         mats = sorted(set(options['Expiration Date of the Option']))
         options = options.set_index('Strike Price')
         if(isNDX):
