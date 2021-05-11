@@ -350,27 +350,27 @@ def runNIGForSPXMultipleExpirationDates(filename: str):
     nig.generate_plot(calibratedParams, data)
 
 # '''NDX Calibrations'''
-# print('\n\nStarting NDX Single Exp Calibrations for M76 \n\n')
-# runMerton76ForNDXSingleExpirationDate('012017NDXSingleExp.xlsx')
-# print('\n\nStarting NDX Single Exp Calibrations for M76 \n\n')
-# runVGForNDXSingleExpirationDate('012017NDXSingleExp.xlsx')
-# print('\n\nStarting NDX Single Exp Calibrations for M76 \n\n')
-# runNIGForNDXSingleExpirationDate('012017NDXSingleExp.xlsx')
+print('\n\nStarting NDX Single Exp Calibrations for M76 \n\n')
+runMerton76ForNDXSingleExpirationDate('012017NDXSingleExp.xlsx')
+print('\n\nStarting NDX Single Exp Calibrations for M76 \n\n')
+runVGForNDXSingleExpirationDate('012017NDXSingleExp.xlsx')
+print('\n\nStarting NDX Single Exp Calibrations for M76 \n\n')
+runNIGForNDXSingleExpirationDate('012017NDXSingleExp.xlsx')
 
 '''Will start calibrations for 7 expirations'''
-# print('\n\nStarting NDX Multi Exp Calibrations for M76 \n\n')
-# runMerton76ForNDXMultipleExpirationDates('012017NDXData.xlsx')
-# print('\n\nStarting NDX Multi Exp Calibrations for VG \n\n')
-# runVGForNDXMultipleExpirationDates('012017NDXData.xlsx')
-# print('\n\nStarting NDX Multi Exp Calibrations for NIG \n\n')
-# runNIGForNDXMultipleExpirationDates('012017NDXData.xlsx')
-#
-# print('\n\nStarting SPX Single Exp Calibrations for M76 \n\n')
-# runMerton76ForSPXSingleExpirationDate('spx012017SingleExp.xlsx')
-# print('\n\nStarting SPX Single Exp Calibrations for VG \n\n')
-# runVGForSPXSingleExpirationDate('spx012017SingleExp.xlsx')
-# print('\n\nStarting SPX Single Exp Calibrations for NIG \n\n')
-# runNIGForSPXSingleExpirationDate('spx012017SingleExp.xlsx')
+print('\n\nStarting NDX Multi Exp Calibrations for M76 \n\n')
+runMerton76ForNDXMultipleExpirationDates('012017NDXData.xlsx')
+print('\n\nStarting NDX Multi Exp Calibrations for VG \n\n')
+runVGForNDXMultipleExpirationDates('012017NDXData.xlsx')
+print('\n\nStarting NDX Multi Exp Calibrations for NIG \n\n')
+runNIGForNDXMultipleExpirationDates('012017NDXData.xlsx')
+
+print('\n\nStarting SPX Single Exp Calibrations for M76 \n\n')
+runMerton76ForSPXSingleExpirationDate('spx012017SingleExp.xlsx')
+print('\n\nStarting SPX Single Exp Calibrations for VG \n\n')
+runVGForSPXSingleExpirationDate('spx012017SingleExp.xlsx')
+print('\n\nStarting SPX Single Exp Calibrations for NIG \n\n')
+runNIGForSPXSingleExpirationDate('spx012017SingleExp.xlsx')
 #
 '''Will start calibrations for 7 expirations'''
 print('\n\nStarting SPX Multi Exp Calibrations for M76 \n\n')
